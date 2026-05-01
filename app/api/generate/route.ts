@@ -135,10 +135,14 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { niches, quantity } = body as { niches: string[]; quantity: number };
+  const { niches, quantity, customPrompt } = body as { 
+    niches: string[]; 
+    quantity: number;
+    customPrompt?: string;
+  };
 
-  if (!niches || niches.length === 0) {
-    return NextResponse.json({ error: "Selecione pelo menos um nicho." }, { status: 400 });
+  if ((!niches || niches.length === 0) && !customPrompt) {
+    return NextResponse.json({ error: "Selecione pelo menos um nicho ou insira um prompt." }, { status: 400 });
   }
 
   const ai = new GoogleGenAI({ apiKey });
@@ -146,12 +150,16 @@ export async function POST(req: NextRequest) {
   const clampedQty = Math.min(Math.max(1, quantity), 20);
 
   for (let i = 0; i < clampedQty; i++) {
-    const niche = niches[i % niches.length];
-    const nicheData = NICHE_DATA[niche];
-    if (!nicheData) continue;
-
-    const promptPool = nicheData.prompts;
-    const imagePrompt = promptPool[Math.floor(Math.random() * promptPool.length)];
+    const niche = niches && niches.length > 0 ? niches[i % niches.length] : "personalizado";
+    const nicheData = NICHE_DATA[niche] || { label: "Personalizado", prompts: [] };
+    
+    let imagePrompt = "";
+    if (customPrompt) {
+      imagePrompt = customPrompt;
+    } else {
+      const promptPool = nicheData.prompts;
+      imagePrompt = promptPool[Math.floor(Math.random() * promptPool.length)];
+    }
 
     try {
       // 1. Generate image

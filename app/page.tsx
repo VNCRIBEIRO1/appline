@@ -106,7 +106,34 @@ function MetaField({
 /* ─── ImageCard component ────────────────────────────────── */
 function ImageCard({ img, index }: { img: GeneratedImage; index: number }) {
   const [imgExpanded, setImgExpanded] = useState(false);
+  const [upscaling, setUpscaling] = useState(false);
+  const [upscaledImage, setUpscaledImage] = useState<string | null>(null);
+  const [upscaleInfo, setUpscaleInfo] = useState<{ sizeMB: string; quality: number } | null>(null);
 
+  const handleUpscale = async () => {
+    if (!img.imageBase64 || upscaling) return;
+    setUpscaling(true);
+    try {
+      const res = await fetch("/api/upscale", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: img.imageBase64 }),
+      });
+      const data = await res.json();
+      if (data.upscaledImage) {
+        setUpscaledImage(data.upscaledImage);
+        setUpscaleInfo({ sizeMB: data.sizeMB, quality: data.quality });
+      } else {
+        alert("Erro no upscale: " + (data.error || "Desconhecido"));
+      }
+    } catch (err) {
+      alert("Falha ao conectar com o servidor de upscale.");
+    } finally {
+      setUpscaling(false);
+    }
+  };
+
+  const currentImg = upscaledImage || img.imageBase64;
   const allMetadata = `TITLE:\n${img.title}\n\nDESCRIPTION:\n${img.description}\n\nKEYWORDS:\n${img.keywords}\n\nCATEGORY:\n${img.category}`;
 
   return (
@@ -123,19 +150,48 @@ function ImageCard({ img, index }: { img: GeneratedImage; index: number }) {
             </svg>
             <span className="text-xs text-center opacity-80">{img.error}</span>
           </div>
-        ) : img.imageBase64 ? (
+        ) : currentImg ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={img.imageBase64}
+              src={currentImg}
               alt={img.title || "Generated image"}
-              className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-500"
+              className={`w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-500 ${upscaling ? 'opacity-50 grayscale' : ''}`}
               onClick={() => setImgExpanded(true)}
             />
+            
+            {upscaling && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-bg/40 backdrop-blur-[2px]">
+                <svg className="w-8 h-8 animate-spin text-accent" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span className="text-[10px] font-bold text-accent uppercase tracking-tighter mt-2">Upscaling 4K...</span>
+              </div>
+            )}
+
             <div className="absolute top-2 right-2 flex gap-2">
+              {!upscaledImage ? (
+                <button
+                  onClick={handleUpscale}
+                  disabled={upscaling}
+                  className="p-2 rounded-lg bg-accent/90 backdrop-blur-sm border border-accent/60 text-bg hover:bg-accent transition-all active:scale-95"
+                  title="Upscale para 4K (4096px)"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V20m0 0h-4m4 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11-5V4m0 0h-4m4 0l-5 5" />
+                  </svg>
+                </button>
+              ) : (
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-green-500 text-white shadow-lg">4K UPSCALED</span>
+                  <span className="text-[8px] font-mono px-1 py-0.5 rounded bg-bg/80 text-muted border border-border/40">{upscaleInfo?.sizeMB} MB</span>
+                </div>
+              )}
+
               <a
-                href={img.imageBase64}
-                download={`stockai_${img.niche}_${img.id}.png`}
+                href={currentImg}
+                download={`stockai_${img.niche}_${img.id}${upscaledImage ? '_4k' : ''}.jpg`}
                 className="p-2 rounded-lg bg-bg/80 backdrop-blur-sm border border-border/60 text-muted hover:text-accent transition-colors"
                 title="Download"
               >
@@ -144,10 +200,16 @@ function ImageCard({ img, index }: { img: GeneratedImage; index: number }) {
                 </svg>
               </a>
             </div>
-            <div className="absolute bottom-2 left-2">
-              <span className="text-xs px-2 py-1 rounded-md bg-bg/80 backdrop-blur-sm border border-border/60 text-muted">
+            
+            <div className="absolute bottom-2 left-2 flex gap-1.5">
+              <span className="text-[10px] px-2 py-0.5 rounded-md bg-bg/80 backdrop-blur-sm border border-border/60 text-muted uppercase font-bold tracking-tight">
                 {img.nicheLabel}
               </span>
+              {upscaledImage && (
+                <span className="text-[10px] px-2 py-0.5 rounded-md bg-bg/80 backdrop-blur-sm border border-border/60 text-green-400 uppercase font-bold tracking-tight">
+                  4096px
+                </span>
+              )}
             </div>
           </>
         ) : (
@@ -162,7 +224,7 @@ function ImageCard({ img, index }: { img: GeneratedImage; index: number }) {
           <h3 className="text-sm font-semibold text-foreground leading-snug line-clamp-2">
             {img.title || "Gerando título..."}
           </h3>
-          <span className="shrink-0 text-xs px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20">
+          <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20 font-bold">
             #{img.id}
           </span>
         </div>
@@ -229,6 +291,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<GeneratedImage[]>([]);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [showPromptInput, setShowPromptInput] = useState(false);
   const [error, setError] = useState("");
 
   const toggleNiche = (id: string) => {
@@ -254,7 +318,11 @@ export default function Home() {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ niches: selectedNiches, quantity }),
+        body: JSON.stringify({ 
+          niches: selectedNiches, 
+          quantity,
+          customPrompt: showPromptInput ? customPrompt : undefined
+        }),
       });
 
       const data = await res.json();
@@ -316,6 +384,35 @@ export default function Home() {
               <p className="mt-1 text-sm text-muted">
                 Gere imagens prontas para vender no Adobe Stock com metadados completos.
               </p>
+            </div>
+
+            {/* Custom Prompt Toggle */}
+            <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-semibold text-muted uppercase tracking-wider">Modo de Geração</h2>
+                <button 
+                  onClick={() => setShowPromptInput(!showPromptInput)}
+                  className={`text-xs px-2 py-1 rounded-md transition-all ${
+                    showPromptInput ? "bg-accent text-bg" : "bg-surface-2 text-muted hover:text-foreground"
+                  }`}
+                >
+                  {showPromptInput ? "Usar Prompt Personalizado" : "Usar Nichos"}
+                </button>
+              </div>
+              
+              {showPromptInput && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                  <textarea
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    placeholder="Descreva a imagem detalhadamente (em inglês)..."
+                    className="w-full h-24 p-3 rounded-lg bg-bg border border-border text-sm text-foreground focus:outline-none focus:border-accent/60 resize-none"
+                  />
+                  <p className="text-[10px] text-muted">
+                    💡 Dica: Seja específico sobre iluminação, estilo e composição.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Quantity */}
