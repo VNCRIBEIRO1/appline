@@ -167,9 +167,7 @@ export async function POST(req: NextRequest) {
         model: "gemini-2.0-flash",
         contents: imagePrompt,
         config: {
-          generationConfig: {
-            responseModalities: ["text", "image"],
-          },
+          responseModalities: ["text", "image"],
         },
       });
 
