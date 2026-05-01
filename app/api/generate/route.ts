@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
     try {
       // 1. Generate image
       const imageResponse = await ai.models.generateContent({
-        model: "gemini-2.0-flash-preview-image-generation",
+        model: "models/gemini-2.0-flash",
         contents: imagePrompt,
         config: {
           responseModalities: [Modality.TEXT, Modality.IMAGE],
@@ -196,7 +196,7 @@ Generate Adobe Stock submission metadata. Return ONLY valid JSON, no markdown, n
 }`;
 
       const metaResponse = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
+        model: "models/gemini-2.0-flash",
         contents: metaPrompt,
       });
 

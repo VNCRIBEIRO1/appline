@@ -1,0 +1,21 @@
+# StockAI Studio
+
+
+# Gerar Imagens para Stock
+Gere imagens prontas para vender no Adobe Stock com metadados completos.
+
+## Modo de Geração
+
+## Quantidade
+⏱ Estimativa: ~0m18s
+
+## Nichos
+1 nicho selecionado
+
+### Dicas Adobe Stock
+- ›Marque sempre 'Created with AI' no upload
+- ›Use upscaler (Topaz/Magnific) antes de enviar
+- ›Evite conteúdo muito genérico/saturado
+- ›Máx. 1.000 uploads/semana no free tier
+Nenhuma imagem gerada ainda
+Selecione nichos e clique em Gerar
