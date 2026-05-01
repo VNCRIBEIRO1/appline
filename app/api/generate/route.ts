@@ -164,10 +164,12 @@ export async function POST(req: NextRequest) {
     try {
       // 1. Generate image
       const imageResponse = await ai.models.generateContent({
-        model: "gemini-3.1-flash-image-preview",
+        model: "gemini-2.0-flash",
         contents: imagePrompt,
         config: {
-          responseModalities: [Modality.TEXT, Modality.IMAGE],
+          generationConfig: {
+            responseModalities: ["text", "image"],
+          },
         },
       });
 
