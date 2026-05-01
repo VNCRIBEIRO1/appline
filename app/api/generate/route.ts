@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
     try {
       // 1. Generate image
       const imageResponse = await ai.models.generateContent({
-        model: "models/gemini-2.0-flash",
+        model: "models/gemini-2.5-flash-image",
         contents: imagePrompt,
         config: {
           responseModalities: ["TEXT", "IMAGE"],
